@@ -3838,6 +3838,29 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 	return SLURM_ERROR;
 }
 
+static bitstr_t *_hide_het_job_launch_nodes(void)
+{
+	bitstr_t *save_avail_node_bitmap;
+
+	if (!avail_node_bitmap || !het_job_launch_node_bitmap ||
+	    !bit_overlap_any(avail_node_bitmap, het_job_launch_node_bitmap))
+		return NULL;
+
+	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	bit_and_not(avail_node_bitmap, het_job_launch_node_bitmap);
+
+	return save_avail_node_bitmap;
+}
+
+static void _restore_avail_node_bitmap(bitstr_t *save_avail_node_bitmap)
+{
+	if (!save_avail_node_bitmap)
+		return;
+
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	avail_node_bitmap = save_avail_node_bitmap;
+}
+
 static int _foreach_select_nodes_resvs(void *object, void *args)
 {
 	slurmctld_resv_t *resv_ptr = object;
@@ -3947,6 +3970,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		.test_only = test_only,
 	};
 	int rc, best_rc, part_limits_rc;
+	bitstr_t *save_avail_node_bitmap = _hide_het_job_launch_nodes();
 
 	if (job_ptr->part_ptr_list) {
 		/* part_ptr_list is already sorted */
@@ -3960,6 +3984,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		 */
 		(void)_select_nodes_qos(&job_node_select);
 	}
+	_restore_avail_node_bitmap(save_avail_node_bitmap);
 
 	rc = job_node_select.rc;
 	best_rc = job_node_select.rc_best;
