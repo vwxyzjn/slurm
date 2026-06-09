@@ -3970,13 +3970,12 @@ set, then it would be automatically set.
 .IP
 
 .TP
-\fBbf_hetjob_sticky_preempt_timeout=#\fR
-Number of seconds the backfill scheduler will keep retrying the same
-heterogeneous job start attempt after preemption has started for one of its
-components. During this window, the scheduler waits for preempted jobs on the
-planned nodes to finish cleanup instead of immediately rolling back the
-heterogeneous job start and replanning against a different node set.
-Set to 0 to disable this sticky preemption wait.
+\fBbf_hetjob_commit_timeout=#\fR
+Number of seconds the backfill scheduler will hold a validated heterogeneous job
+launch transaction while planned preemptions clear. The transaction starts only
+after the hetjob passes normal start eligibility checks, hides the planned nodes
+from other jobs, and keeps retrying that exact plan until all components start
+or the timeout expires. Set to 0 to disable launch transactions.
 The default value is 1800 seconds.
 .IP
 
